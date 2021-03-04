@@ -28,7 +28,7 @@ class ImageProcess:
             batch = it.next()
             array = batch[0].astype('uint8')
             img = array_to_img(array)
-            img.save(self.dir_path + self.name + str(self.num) + '.jpg')
+            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
         datagen = ImageDataGenerator(height_shift_range=[-30, 30])
         it = datagen.flow(samples, batch_size=1)
@@ -36,7 +36,7 @@ class ImageProcess:
             batch = it.next()
             array = batch[0].astype('uint8')
             img = array_to_img(array)
-            img.save(self.dir_path + self.name + str(self.num) + '.jpg')
+            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
         datagen = ImageDataGenerator(horizontal_flip=True,
                                      vertical_flip=True)
@@ -45,7 +45,7 @@ class ImageProcess:
             batch = it.next()
             array = batch[0].astype('uint8')
             img = array_to_img(array)
-            img.save(self.dir_path + self.name + str(self.num) + '.jpg')
+            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
         datagen = ImageDataGenerator(rotation_range=90)
         it = datagen.flow(samples, batch_size=1)
@@ -53,7 +53,7 @@ class ImageProcess:
             batch = it.next()
             array = batch[0].astype('uint8')
             img = array_to_img(array)
-            img.save(self.dir_path + self.name + str(self.num) + '.jpg')
+            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
         datagen = ImageDataGenerator(brightness_range=[0.2, 1.0])
         it = datagen.flow(samples, batch_size=1)
@@ -61,7 +61,7 @@ class ImageProcess:
             batch = it.next()
             array = batch[0].astype('uint8')
             img = array_to_img(array)
-            img.save(self.dir_path + self.name + str(self.num) + '.jpg')
+            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
         datagen = ImageDataGenerator(zoom_range=[0.5, 1.0])
         it = datagen.flow(samples, batch_size=1)
@@ -69,6 +69,6 @@ class ImageProcess:
             batch = it.next()
             array = batch[0].astype('uint8')
             img = array_to_img(array)
-            img.save(self.dir_path + self.name + str(self.num) + '.jpg')
+            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
         return self.num

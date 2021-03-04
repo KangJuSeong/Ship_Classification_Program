@@ -19,6 +19,7 @@ class TrainingProgram(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.base_url = 'http://127.0.0.1:8000/'
         self.ship_label = QLabel('학습 선박 : ', self)
         self.ship_edit = QLineEdit(self)
         self.info_label = QLabel('선박 정보 : ', self)
@@ -54,13 +55,13 @@ class TrainingProgram(QWidget):
         self.ship_idx = QLineEdit(self)
         self.result = QLabel('결과 : ', self)
         self.train_ship_list = []
-        self.un_train_ship_list = os.listdir('D:/TrainingShip/dataset/img_gen')
+        self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/img_gen')
         self.img_list = []
         self.img_name = ''
         self.dir_path = ''
         self.model_path = ''
-        file_list = os.listdir('D:/TrainingShip/class_history')
-        file1 = open('D:/TrainingShip/class_history/' + file_list[-1], 'r')
+        file_list = os.listdir(os.getcwd().replace('\\', '/') + '/class_history')
+        file1 = open(os.getcwd().replace('\\', '/') + '/class_history/' + file_list[-1], 'r')
         lines = file1.readlines()
         for line in lines:
             self.train_ship_list.append(line.rstrip('\n'))
@@ -135,22 +136,20 @@ class TrainingProgram(QWidget):
     def load_ship_data(self):
         if self.cb_normal.isChecked():
             keyword = self.ship_edit.text()
-            data = requests.get('http://127.0.0.1:8000/Ships/ship/normal/program/' + keyword + '/').json()['data']
+            data = requests.get(self.base_url + 'Ships/ship/normal/program/' + keyword + '/').json()['data']
             self.img_name = data['name']
             img_cnt = data['img_cnt']
-            self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, img_cnt * 54, self.img_name))
+            self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
             self.img_list = data['normal_imgs']
-            self.img_list.append(data['main_img'])
-            self.dir_path = 'D:/TrainingShip/dataset/img_gen/' + self.img_name + '/'
+            self.dir_path = os.getcwd().replace('\\', '/') + '/dataset/img_gen/' + self.img_name + '/'
         elif self.cb_waste.isChecked():
             keyword = self.ship_edit.text()
-            data = requests.get('http://127.0.0.1:8000/Ships/ship/waste/program/' + keyword + '/').json()['data']
+            data = requests.get(self.base_url + 'Ships/ship/waste/program/' + keyword + '/').json()['data']
             self.img_name = data['id']
             img_cnt = data['img_cnt']
-            self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, int(img_cnt) * 54, self.img_name))
+            self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
             self.img_list = data['waste_imgs']
-            self.img_list.append(data['main_img'])
-            self.dir_path = 'D:/TrainingShip/dataset/img_gen/' + self.img_name + '/'
+            self.dir_path = os.getcwd().replace('\\', '/') + '/dataset/img_gen/' + self.img_name + '/'
         else:
             msg = QMessageBox()
             msg.setText("선박 종류를 선택해주세요")
@@ -162,13 +161,13 @@ class TrainingProgram(QWidget):
         if not os.path.exists(self.dir_path):
             os.makedirs(self.dir_path)
         idx = 0
-        base_url = 'http://127.0.0.1:8000'
+        base_url = self.base_url[:-1]
         self.gen_state.setText('상태 : 진행중')
         for img in self.img_list:
             self.gen_bar.setValue(idx)
             img_data_url = base_url + img
             img_data = requests.get(img_data_url)
-            img_path = self.dir_path + self.img_name + str(idx) + '.jpg'
+            img_path = self.dir_path + self.img_name + '_' + str(idx) + '.jpg'
             image = open(img_path, 'wb')
             image.write(img_data.content)
             image.close()
@@ -192,10 +191,10 @@ class TrainingProgram(QWidget):
         self.train_state.setText('학습 상태 : 학습 완료')
 
     def refresh_screen(self):
-        self.un_train_ship_list = os.listdir('D:/TrainingShip/dataset/img_gen')
+        self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/img_gen')
         self.train_ship_list = []
-        file_list = os.listdir('D:/TrainingShip/class_history')
-        file1 = open('D:/TrainingShip/class_history/' + file_list[-1], 'r')
+        file_list = os.listdir(os.getcwd().replace('\\', '/') + '/class_history')
+        file1 = open(os.getcwd().replace('\\', '/') + '/class_history/' + file_list[-1], 'r')
         lines = file1.readlines()
         self._model = QStandardItemModel()
         self.model = QStandardItemModel()
@@ -226,8 +225,9 @@ class TrainingProgram(QWidget):
         self.load_model_label.setText('모델명 : ' + name)
 
     def predict_ship(self):
-        img_idx = int(self.ship_idx.text())
-        img_path = 'http://127.0.0.1:8000' + self.img_list[img_idx]
+        # img_idx = int(self.ship_idx.text())
+        # img_path = 'http://127.0.0.1:8000' + self.img_list[img_idx]
+        img_path = self.base_url + 'media/normal/new/2021/02/22/2021-02-22_172755.3731806d6dee95-4f72-43a2-a22e-40a751c7130b.jpg'
         img = Image.open(requests.get(img_path, stream=True).raw)
         img = img.resize((224, 224))
         image_array = np.asarray(img)
@@ -239,6 +239,6 @@ class TrainingProgram(QWidget):
 
 
 if __name__ == '__main__':
-   app = QApplication(sys.argv)
-   ex = TrainingProgram()
-   sys.exit(app.exec_())
+    app = QApplication(sys.argv)
+    ex = TrainingProgram()
+    sys.exit(app.exec_())

@@ -41,19 +41,19 @@ class EfficientNet:
                             batch_size=self.batch_size)
 
         save_name = str(datetime.today().year) + str(datetime.today().month) + str(datetime.today().day) + str(datetime.today().hour) + str(datetime.today().minute)
-        model.save('D:/TrainingShip/save_model/ship_classfication_v' + save_name + '.h5')
+        model.save(os.getcwd().replace('\\', '/') + '/save_model/ship_classfication_v' + save_name + '.h5')
 
         history_dict = history.history
-        json.dump(history_dict, open('D:/TrainingShip/acc_history/acc_history_v' + save_name + '.txt', 'w'))
+        json.dump(history_dict, open(os.getcwd().replace('\\', '/') + '/acc_history/acc_history_v' + save_name + '.txt', 'w'))
 
-        class_list = os.listdir('D:/TrainingShip/dataset/img_gen')
-        _file = open('D:/TrainingShip/class_history/class_history_v' + save_name + '.txt', 'w')
+        class_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/img_gen')
+        _file = open(os.getcwd().replace('\\', '/') + '/class_history/class_history_v' + save_name + '.txt', 'w')
         for i in class_list:
             _file.write(i + '\n')
         _file.close()
 
     def data_setting(self):
-        base_path = 'D:/TrainingShip/dataset/img_gen'
+        base_path = os.getcwd().replace('\\', '/') + '/dataset/img_gen'
         data_target = []
         total_img_len = 0
         ready_ship = os.listdir(base_path)
@@ -84,7 +84,7 @@ class EfficientNet:
 
     @staticmethod
     def draw_graph(filename):
-        with open('D:/TrainingShip/acc_history/'+filename, 'r') as json_file:
+        with open(os.getcwd().replace('\\', '/') + '/acc_history/'+filename, 'r') as json_file:
             data = json.load(json_file)
             acc = data['acc']
             val_acc = data['val_acc']
