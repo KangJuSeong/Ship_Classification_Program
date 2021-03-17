@@ -52,8 +52,9 @@ class TrainingProgram(QWidget):
         self.predict_btn = QPushButton('예측하기', self)
         self.load_model_btn = QPushButton('모델 불러오기', self)
         self.load_model_label = QLabel('모델명 : ', self)
-        self.ship_idx_label = QLabel('이미지 번호 : ', self)
-        self.ship_idx = QLineEdit(self)
+        self.ship_img_label = QLabel('이미지 : ', self)
+        self.ship_img_name = QLabel('', self)
+        self.ship_img_load_btn = QPushButton('이미지 불러오기', self)
         self.result = QLabel('결과 : ', self)
         self.train_ship_list = []
         self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img')
@@ -124,12 +125,14 @@ class TrainingProgram(QWidget):
         self.graph_name.resize(200, 15)
         self.load_model_label.move(600, 470)
         self.load_model_label.resize(300, 15)
-        self.load_model_btn.move(700, 545)
+        self.load_model_btn.move(720, 545)
         self.predict_btn.move(820, 545)
         self.predict_btn.clicked.connect(self.predict_ship)
-        self.ship_idx_label.move(600, 505)
-        self.ship_idx.move(680, 502)
-        self.ship_idx.resize(40, 20)
+        self.ship_img_label.move(600, 505)
+        self.ship_img_name.move(650, 505)
+        self.ship_img_name.resize(200, 15)
+        self.ship_img_load_btn.move(600, 545)
+        self.ship_img_load_btn.clicked.connect(self.load_img)
         self.load_model_btn.clicked.connect(self.load_model)
         self.result.move(600, 600)
         self.result.resize(300., 15)
@@ -194,7 +197,7 @@ class TrainingProgram(QWidget):
             self.gen_bar.setValue(idx)
             img_data_url = base_url + img
             img_data = requests.get(img_data_url)
-            img_path = self.gen_path + self.img_name + '_' + str(idx) + '.jpg'
+            img_path = self.train_path + self.img_name + '_' + str(idx) + '.jpg'
             image = open(img_path, 'wb')
             image.write(img_data.content)
             image.close()
@@ -218,16 +221,18 @@ class TrainingProgram(QWidget):
         self.train_state.setText('학습 상태 : 학습 완료')
 
     def refresh_screen(self):
-        self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/img_gen')
+        self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img')
         self.train_ship_list = []
-        file_list = os.listdir(os.getcwd().replace('\\', '/') + '/class_history')
-        file1 = open(os.getcwd().replace('\\', '/') + '/class_history/' + file_list[-1], 'r')
+        file_list = [(os.path.getctime(os.getcwd().replace('\\', '/') + '/class_history/' + x), x) for x in os.listdir(os.getcwd().replace('\\', '/') + '/class_history')]
+        file1 = open(os.getcwd().replace('\\', '/') + '/class_history/' + file_list[-1][1], 'r')
         lines = file1.readlines()
         self._model = QStandardItemModel()
         self.model = QStandardItemModel()
         for line in lines:
             self.train_ship_list.append(line.rstrip('\n'))
         self.un_train_ship_list = list(set(self.un_train_ship_list) - set(self.train_ship_list))
+        if self.train_ship_list[0] == '':
+            self.train_ship_list = list()
         for ship in self.train_ship_list:
             self.model.appendRow(QStandardItem(ship))
         self.train_list.setModel(self.model)
@@ -244,6 +249,12 @@ class TrainingProgram(QWidget):
         name = path[0][name_idx+8:]
         self.graph_name.setText(name)
 
+    def load_img(self):
+        path = QFileDialog.getOpenFileName(self)
+        name_idx = path[0].find('test_img')
+        name = path[0][name_idx+9:]
+        self.ship_img_name.setText(name)
+
     def load_model(self):
         path = QFileDialog.getOpenFileName(self)
         self.model_path = path[0]
@@ -252,10 +263,8 @@ class TrainingProgram(QWidget):
         self.load_model_label.setText('모델명 : ' + name)
 
     def predict_ship(self):
-        data = requests.get('http://127.0.0.1:8000/Ships/ship/normal/program/' + self.ship_idx.text()).json()['data']
-        img_url = data['main_img']
-        img_path = 'http://127.0.0.1:8000' + img_url
-        img = Image.open(requests.get(img_path, stream=True).raw)
+        img_path = os.getcwd().replace('\\', '/') + '/dataset/test_img/' + self.ship_img_name.text()
+        img = Image.open(img_path)
         img = img.resize((224, 224))
         image_array = np.asarray(img)
         plt.imshow(image_array)
