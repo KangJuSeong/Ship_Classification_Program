@@ -46,14 +46,14 @@ class EfficientNet:
         history_dict = history.history
         json.dump(history_dict, open(os.getcwd().replace('\\', '/') + '/acc_history/acc_history_v' + save_name + '.txt', 'w'))
 
-        class_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/img_gen')
+        class_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img')
         _file = open(os.getcwd().replace('\\', '/') + '/class_history/class_history_v' + save_name + '.txt', 'w')
         for i in class_list:
             _file.write(i + '\n')
         _file.close()
 
     def data_setting(self):
-        base_path = os.getcwd().replace('\\', '/') + '/dataset/img_gen'
+        base_path = os.getcwd().replace('\\', '/') + '/dataset/gen_img'
         data_target = []
         total_img_len = 0
         ready_ship = os.listdir(base_path)
