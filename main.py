@@ -69,8 +69,6 @@ class TrainingProgram(QWidget):
         lines = file1.readlines()
         for line in lines:
             self.train_ship_list.append(line.rstrip('\n'))
-        if self.train_ship_list[0] == '':
-            self.train_ship_list = list()
         self.un_train_ship_list = list(set(self.un_train_ship_list) - set(self.train_ship_list))
         self.initUI()
 
@@ -145,7 +143,7 @@ class TrainingProgram(QWidget):
         if self.cb_normal.isChecked():
             keyword = self.ship_edit.text()
             data = requests.get(self.base_url + 'Ships/ship/normal/program/' + keyword + '/').json()['data']
-            self.img_name = data['name']
+            self.img_name = 'n_' + str(data['id'])
             img_cnt = data['img_cnt']
             self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
             self.img_list = data['normal_imgs']
@@ -155,7 +153,7 @@ class TrainingProgram(QWidget):
         elif self.cb_waste.isChecked():
             keyword = self.ship_edit.text()
             data = requests.get(self.base_url + 'Ships/ship/waste/program/' + keyword + '/').json()['data']
-            self.img_name = data['id']
+            self.img_name = 'w_' + str(data['id'])
             img_cnt = data['img_cnt']
             self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
             self.img_list = data['waste_imgs']
@@ -183,7 +181,7 @@ class TrainingProgram(QWidget):
         test_img_list = []
         test_cnt = int(len(self.img_list) * 0.2)
         for i in range(test_cnt):
-            test_img_list.append(self.img_list[random.randint(0, len(self.img_list))])
+            test_img_list.append(self.img_list[random.randint(0, len(self.img_list)-1)])
         for img in self.img_list:
             if img in test_img_list:
                 img_data_url = base_url + img
@@ -231,8 +229,6 @@ class TrainingProgram(QWidget):
         for line in lines:
             self.train_ship_list.append(line.rstrip('\n'))
         self.un_train_ship_list = list(set(self.un_train_ship_list) - set(self.train_ship_list))
-        if self.train_ship_list[0] == '':
-            self.train_ship_list = list()
         for ship in self.train_ship_list:
             self.model.appendRow(QStandardItem(ship))
         self.train_list.setModel(self.model)
