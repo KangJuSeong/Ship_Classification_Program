@@ -20,6 +20,14 @@ class TrainingProgram(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.api_url = "http://211.236.124.151:2162/"
+        res = requests.post(url=self.api_url + "Accounts/login/",
+                            json={
+                                "srvno": "admin",
+                                "password": "admin",
+                                "device_id": "ADMIN",
+                            })
+        self.token = res.json()['data']['token']
         self.base_url = 'http://127.0.0.1:8000/'
         self.ship_label = QLabel('학습 선박 : ', self)
         self.ship_edit = QLineEdit(self)
@@ -142,29 +150,16 @@ class TrainingProgram(QWidget):
     def load_ship_data(self):
         if self.cb_normal.isChecked():
             keyword = self.ship_edit.text()
-            data = requests.get(self.base_url + 'Ships/ship/normal/program/' + keyword + '/').json()['data']
-            self.img_name = 'n_' + str(data['id'])
-            img_cnt = data['img_cnt']
+            img_list = requests.get(url=self.api_url + 'Ships/image/normal/list/' + keyword + '/',
+                                headers={"Authorization": "jwt " + self.token}).json()['data']
+            self.img_name = 'n_' + str(keyword)
+            img_cnt = len(img_list)
             self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
-            self.img_list = data['normal_imgs']
+            self.img_list = img_list
             self.gen_path = os.getcwd().replace('\\', '/') + '/dataset/gen_img/' + self.img_name + '/'
             self.train_path = os.getcwd().replace('\\', '/') + '/dataset/train_img/' + self.img_name + '/'
             self.test_path = os.getcwd().replace('\\', '/') + '/dataset/test_img/' + self.img_name + '/'
-        elif self.cb_waste.isChecked():
-            keyword = self.ship_edit.text()
-            data = requests.get(self.base_url + 'Ships/ship/waste/program/' + keyword + '/').json()['data']
-            self.img_name = 'w_' + str(data['id'])
-            img_cnt = data['img_cnt']
-            self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
-            self.img_list = data['waste_imgs']
-            self.gen_path = os.getcwd().replace('\\', '/') + '/dataset/gen_img/' + self.img_name + '/'
-            self.train_path = os.getcwd().replace('\\', '/') + '/dataset/train_img/' + self.img_name + '/'
-            self.test_path = os.getcwd().replace('\\', '/') + '/dataset/test_img/' + self.img_name + '/'
-        else:
-            msg = QMessageBox()
-            msg.setText("선박 종류를 선택해주세요")
-            msg.setWindowTitle("경고")
-            retval = msg.exec_()
+        
 
     def generator_img(self):
         self.gen_bar.setRange(0, len(self.img_list) * 54 + len(self.img_list))
@@ -184,7 +179,7 @@ class TrainingProgram(QWidget):
             test_img_list.append(self.img_list[random.randint(0, len(self.img_list)-1)])
         for img in self.img_list:
             if img in test_img_list:
-                img_data_url = base_url + img
+                img_data_url = self.api_url + img['img']
                 img_data = requests.get(img_data_url)
                 img_path = self.test_path + self.img_name + '_' + str(test_idx) + '.jpg'
                 image = open(img_path, 'wb')
@@ -193,7 +188,7 @@ class TrainingProgram(QWidget):
                 test_idx = test_idx + 1
                 continue
             self.gen_bar.setValue(idx)
-            img_data_url = base_url + img
+            img_data_url = self.api_url + img['img']
             img_data = requests.get(img_data_url)
             img_path = self.train_path + self.img_name + '_' + str(idx) + '.jpg'
             image = open(img_path, 'wb')
@@ -210,13 +205,14 @@ class TrainingProgram(QWidget):
         self.train_state.setText('학습 상태 : 학습 중')
         model = eF(epoch=int(self.epoch.text()),
                    batch_size=int(self.batch_size.text()),
-                   classes=len(self.train_ship_list)+len(self.un_train_ship_list))
+                   classes=len(self.un_train_ship_list))
         train_input, test_input, train_target, test_target = model.data_setting()
         model.training_model(train_input=train_input,
                              test_input=test_input,
                              train_target=train_target,
                              test_target=test_target)
         self.train_state.setText('학습 상태 : 학습 완료')
+        print("완료")
 
     def refresh_screen(self):
         self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img')
