@@ -20,7 +20,7 @@ class TrainingProgram(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.api_url = "http://211.236.124.151:2162/"
+        self.api_url = "http://127.0.0.1:8000/"
         res = requests.post(url=self.api_url + "Accounts/login/",
                             json={
                                 "srvno": "admin",
