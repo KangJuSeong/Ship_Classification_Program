@@ -20,9 +20,12 @@ class ImageProcess:
 
     def image_generator(self):
         img = Image.open(self.path)
+        img = img.resize(self.size)
         data = img_to_array(img)
         samples = expand_dims(data, 0)
-        datagen = ImageDataGenerator(width_shift_range=[-30, 30])
+        datagen = ImageDataGenerator(width_shift_range=[-30, 30],
+                                     horizontal_flip=True,
+                                     vertical_flip=True)
         it = datagen.flow(samples, batch_size=1)
         for i in range(9):
             batch = it.next()
@@ -30,15 +33,8 @@ class ImageProcess:
             img = array_to_img(array)
             img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
-        datagen = ImageDataGenerator(height_shift_range=[-30, 30])
-        it = datagen.flow(samples, batch_size=1)
-        for i in range(9):
-            batch = it.next()
-            array = batch[0].astype('uint8')
-            img = array_to_img(array)
-            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
-            self.num = self.num+1
-        datagen = ImageDataGenerator(horizontal_flip=True,
+        datagen = ImageDataGenerator(height_shift_range=[-30, 30],
+                                     horizontal_flip=True,
                                      vertical_flip=True)
         it = datagen.flow(samples, batch_size=1)
         for i in range(9):
@@ -55,15 +51,17 @@ class ImageProcess:
             img = array_to_img(array)
             img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
             self.num = self.num+1
-        datagen = ImageDataGenerator(brightness_range=[0.2, 1.0])
-        it = datagen.flow(samples, batch_size=1)
-        for i in range(9):
-            batch = it.next()
-            array = batch[0].astype('uint8')
-            img = array_to_img(array)
-            img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
-            self.num = self.num+1
-        datagen = ImageDataGenerator(zoom_range=[0.5, 1.0])
+        # datagen = ImageDataGenerator(brightness_range=[0.2, 1.0])
+        # it = datagen.flow(samples, batch_size=1)
+        # for i in range(9):
+        #     batch = it.next()
+        #     array = batch[0].astype('uint8')
+        #     img = array_to_img(array)
+        #     img.save(self.dir_path + self.name + '_' + str(self.num) + '.jpg')
+        #     self.num = self.num+1
+        datagen = ImageDataGenerator(zoom_range=[0.5, 1.0],
+                                     horizontal_flip=True,
+                                     vertical_flip=True)
         it = datagen.flow(samples, batch_size=1)
         for i in range(9):
             batch = it.next()
