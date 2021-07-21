@@ -20,7 +20,7 @@ class TrainingProgram(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.api_url = "http://211.236.124.151:2162/"
+        self.api_url = 'http://127.0.0.1:8000/'
         res = requests.post(url=self.api_url + "Accounts/login/",
                             json={
                                 "srvno": "admin",
@@ -28,7 +28,6 @@ class TrainingProgram(QWidget):
                                 "device_id": "ADMIN",
                             })
         self.token = res.json()['data']['token']
-        self.base_url = 'http://127.0.0.1:8000/'
         self.ship_label = QLabel('학습 선박 : ', self)
         self.ship_edit = QLineEdit(self)
         self.info_label = QLabel('선박 정보 : ', self)
@@ -41,7 +40,8 @@ class TrainingProgram(QWidget):
         self.gen_bar = QProgressBar(self)
         self.info = QLabel('', self)
         self.train_list_label = QLabel('학습 된 선박', self)
-        self.un_train_list_label = QLabel('학습 준비 선박', self)
+        self.load_list_train_ship = QPushButton('학습 선박 불러오기', self)
+        self.un_train_list_label = QLabel('학습 요청 선박', self)
         self.train_list = QListView(self)
         self.un_train_list = QListView(self)
         self.refresh = QPushButton('새로고침', self)
@@ -65,19 +65,27 @@ class TrainingProgram(QWidget):
         self.ship_img_load_btn = QPushButton('이미지 불러오기', self)
         self.result = QLabel('결과 : ', self)
         self.train_ship_list = []
-        self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img')
+        res = requests.get(url=self.api_url + "Ships/image/trainlist/", headers={"Authorization": "jwt " + self.token})
+        self.un_train_ship_list = []
+        for i in res.json()['data']['ship_id']:
+            self.un_train_ship_list.append(i)
+        ready_train_ship = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img/')
+        for ship in ready_train_ship:
+            data = int(ship[2:])
+            if data in self.un_train_ship_list:
+                idx = self.un_train_ship_list.index(data)
+                self.un_train_ship_list.pop(idx)
+        self._model = QStandardItemModel()
+        self.un_train_list.setModel(self._model)
+        for ship in self.un_train_ship_list:
+            self._model.appendRow(QStandardItem(str(ship)))
         self.img_list = []
         self.img_name = ''
         self.test_path = ''
         self.train_path = ''
         self.gen_path = ''
         self.model_path = ''
-        file_list = os.listdir(os.getcwd().replace('\\', '/') + '/class_history')
-        file1 = open(os.getcwd().replace('\\', '/') + '/class_history/' + file_list[-1], 'r')
-        lines = file1.readlines()
-        for line in lines:
-            self.train_ship_list.append(line.rstrip('\n'))
-        self.un_train_ship_list = list(set(self.un_train_ship_list) - set(self.train_ship_list))
+        file_list = []
         self.initUI()
 
     def initUI(self):
@@ -99,6 +107,8 @@ class TrainingProgram(QWidget):
         self.gen_bar.move(170, 150)
         self.gen_bar.resize(600, 30)
         self.train_list_label.move(50, 220)
+        self.load_list_train_ship.move(150, 210)
+        self.load_list_train_ship.clicked.connect(self.load_train_ship)
         self.un_train_list_label.move(300, 220)
         self.train_list.move(50, 250)
         self.train_list.resize(200, 400)
@@ -114,11 +124,9 @@ class TrainingProgram(QWidget):
         self.refresh.move(600, 250)
         self.refresh.clicked.connect(self.refresh_screen)
         self.train.clicked.connect(self.train_ship)
-        for ship in self.train_ship_list:
-            self.model.appendRow(QStandardItem(ship))
         self.train_list.setModel(self.model)
         for ship in self.un_train_ship_list:
-            self._model.appendRow(QStandardItem(ship))
+            self._model.appendRow(QStandardItem(str(ship)))
         self.un_train_list.setModel(self._model)
         self.train_state.move(600, 330)
         self.train_state.resize(200, 50)
@@ -148,18 +156,22 @@ class TrainingProgram(QWidget):
         self.show()
 
     def load_ship_data(self):
-        if self.cb_normal.isChecked():
-            keyword = self.ship_edit.text()
-            img_list = requests.get(url=self.api_url + 'Ships/image/normal/list/' + keyword + '/',
-                                headers={"Authorization": "jwt " + self.token}).json()['data']
-            self.img_name = 'n_' + str(keyword)
-            img_cnt = len(img_list)
-            self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
-            self.img_list = img_list
-            self.gen_path = os.getcwd().replace('\\', '/') + '/dataset/gen_img/' + self.img_name + '/'
-            self.train_path = os.getcwd().replace('\\', '/') + '/dataset/train_img/' + self.img_name + '/'
-            self.test_path = os.getcwd().replace('\\', '/') + '/dataset/test_img/' + self.img_name + '/'
-        
+        keyword = self.ship_edit.text()
+        res = requests.get(url=self.api_url + 'Ships/image/train/?id=' + keyword,
+                            headers={"Authorization": "jwt " + self.token}).json()['data']
+        img_list = []
+        for i in res:
+            _res = requests.get(url=self.api_url + 'Ships/image/normal/?id=' + str(i['img_id']),
+                            headers={"Authorization": "jwt " + self.token}).json()['data']
+            img_list.append(_res)            
+        self.img_name = 'n_' + str(keyword)
+        img_cnt = len(img_list)
+        self.info.setText('{2}, {0}개 이미지 보유, 증식 후 {1}개 이미지 생성'.format(img_cnt, (int(img_cnt)-1) * 54, self.img_name))
+        self.img_list = img_list
+        self.gen_path = os.getcwd().replace('\\', '/') + '/dataset/gen_img/' + self.img_name + '/'
+        self.train_path = os.getcwd().replace('\\', '/') + '/dataset/train_img/' + self.img_name + '/'
+        self.test_path = os.getcwd().replace('\\', '/') + '/dataset/test_img/' + self.img_name + '/'
+        self.generator_img()   
 
     def generator_img(self):
         self.gen_bar.setRange(0, len(self.img_list) * 54 + len(self.img_list))
@@ -200,37 +212,40 @@ class TrainingProgram(QWidget):
         self.gen_bar.setValue(self.gen_bar.maximum())
         if self.gen_bar.value() == self.gen_bar.maximum():
             self.gen_state.setText('상태 : 완료')
+        ready_train_ship = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img/')
+        for ship in ready_train_ship:
+            data = int(ship[2:])
+            if data in self.un_train_ship_list:
+                idx = self.un_train_ship_list.index(data)
+                self.un_train_ship_list.pop(idx)
+        self._model = QStandardItemModel()
+        self.un_train_list.setModel(self._model)
+        for ship in self.un_train_ship_list:
+            self._model.appendRow(QStandardItem(str(ship)))
+
 
     def train_ship(self):
         self.train_state.setText('학습 상태 : 학습 중')
+        train_ship = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img/')
         model = eF(epoch=int(self.epoch.text()),
                    batch_size=int(self.batch_size.text()),
-                   classes=len(self.un_train_ship_list))
-        train_input, test_input, train_target, test_target = model.data_setting()
-        model.training_model(train_input=train_input,
-                             test_input=test_input,
-                             train_target=train_target,
-                             test_target=test_target)
+                   classes=len(train_ship))
+        train_ds, val_ds = model.data_setting()
+        model.training_model(train_ds=train_ds,
+                             val_ds=val_ds)
         self.train_state.setText('학습 상태 : 학습 완료')
-        print("완료")
 
     def refresh_screen(self):
-        self.un_train_ship_list = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img')
-        self.train_ship_list = []
-        file_list = [(os.path.getctime(os.getcwd().replace('\\', '/') + '/class_history/' + x), x) for x in os.listdir(os.getcwd().replace('\\', '/') + '/class_history')]
-        file1 = open(os.getcwd().replace('\\', '/') + '/class_history/' + file_list[-1][1], 'r')
-        lines = file1.readlines()
+        ready_train_ship = os.listdir(os.getcwd().replace('\\', '/') + '/dataset/gen_img/')
+        for ship in ready_train_ship:
+            data = int(ship[2:])
+            if data in self.un_train_ship_list:
+                idx = self.un_train_ship_list.index(data)
+                self.un_train_ship_list.pop(idx)
         self._model = QStandardItemModel()
-        self.model = QStandardItemModel()
-        for line in lines:
-            self.train_ship_list.append(line.rstrip('\n'))
-        self.un_train_ship_list = list(set(self.un_train_ship_list) - set(self.train_ship_list))
-        for ship in self.train_ship_list:
-            self.model.appendRow(QStandardItem(ship))
-        self.train_list.setModel(self.model)
-        for ship in self.un_train_ship_list:
-            self._model.appendRow(QStandardItem(ship))
         self.un_train_list.setModel(self._model)
+        for ship in self.un_train_ship_list:
+            self._model.appendRow(QStandardItem(str(ship)))
 
     def draw_graph(self):
         eF.draw_graph(self.graph_name.text())
@@ -262,8 +277,20 @@ class TrainingProgram(QWidget):
         plt.imshow(image_array)
         plt.show()
         image_array = image_array / 255.0
-        result = eF.predict_ship(image_array, self.model_path, self.train_ship_list)
-        self.result.setText('결과 : ' + result)
+        class_list = os.listdir("D:/Ship_Classification_Program/dataset/gen_img")
+        result = eF.predict_ship(image_array, self.model_path, class_list)
+
+    def load_train_ship(self):
+        path = QFileDialog.getOpenFileName(self)
+        ship = open(path[0], 'r')
+        line = ship.readlines()
+        ship_data = []
+        for i in line:
+            self.train_ship_list.append(i.replace("\n", ""))
+        self.model = QStandardItemModel()
+        self.train_list.setModel(self.model)
+        for ship in self.train_ship_list:
+            self.model.appendRow(QStandardItem(ship))        
 
 
 if __name__ == '__main__':
